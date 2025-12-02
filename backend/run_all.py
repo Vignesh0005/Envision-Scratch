@@ -205,11 +205,11 @@ def main():
         logger.error("HTTP server failed to start!")
         sys.exit(1)
     
-                logger.info("[OK] HTTP Server started successfully")
+    logger.info("[OK] HTTP Server started successfully")
     
     # Start WebSocket service in main thread (blocking)
     try:
-                logger.info("[OK] Starting WebSocket Service...")
+        logger.info("[OK] Starting WebSocket Service...")
         run_websocket_service()
     except KeyboardInterrupt:
         logger.info("\nShutdown requested by user")

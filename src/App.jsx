@@ -33,7 +33,7 @@ const App = () => {
   const [showPorosity, setShowPorosity] = useState(false);
   
   // Add state for resizable image gallery
-  const [galleryHeight, setGalleryHeight] = useState(300);
+  const [galleryHeight, setGalleryHeight] = useState(150); // Start with smaller default height
   const [isResizing, setIsResizing] = useState(false);
   const [dateFilter, setDateFilter] = useState({ fromDate: '', toDate: '' });
 
@@ -232,8 +232,8 @@ const App = () => {
           
           {/* Image Gallery with dynamic height */}
           <div 
-            className="w-full border-t border-gray-200 bg-white overflow-hidden transition-all duration-200 ease-out"
-            style={{ height: `${galleryHeight}px` }}
+            className="w-full border-t border-gray-200 bg-white overflow-hidden transition-all duration-200 ease-out relative"
+            style={{ height: `${galleryHeight}px`, zIndex: 10 }}
           >
             <ImageList
               currentPath={currentFolderPath}

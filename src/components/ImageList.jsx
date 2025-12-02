@@ -5,7 +5,7 @@ const ImageList = ({ currentPath, onSelectImage, dateFilter }) => {
   const [allImages, setAllImages] = useState([]); // Store all images before filtering
   const [loading, setLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [isExpanded, setIsExpanded] = useState(true); // Gallery starts expanded
+  const [isExpanded, setIsExpanded] = useState(false); // Gallery starts collapsed
 
   // Add polling interval state (default 5 seconds)
   const POLL_INTERVAL = 5000;
@@ -130,40 +130,61 @@ const ImageList = ({ currentPath, onSelectImage, dateFilter }) => {
 
   // Apply date filter whenever dateFilter or allImages change
   useEffect(() => {
-    const filter = dateFilter || { fromDate: '', toDate: '' };
-    
-    if (!filter.fromDate && !filter.toDate) {
+    if (!dateFilter || (!dateFilter.fromDate && !dateFilter.toDate)) {
       // No filter applied, show all images
       setImages(allImages);
       return;
     }
 
     const filtered = allImages.filter(img => {
-      const imageDate = new Date(img.date);
-      imageDate.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+      if (!img.date) return false;
+      
+      // Parse image date - handle both Date objects and date strings
+      let imageDate = img.date;
+      if (typeof imageDate === 'string') {
+        imageDate = new Date(imageDate);
+      } else if (!(imageDate instanceof Date)) {
+        imageDate = new Date(imageDate);
+      }
+      
+      // Check if date is valid
+      if (isNaN(imageDate.getTime())) {
+        console.warn('Invalid date for image:', img.name, img.date);
+        return false;
+      }
+      
+      // Reset time to start of day for comparison
+      const imgDateOnly = new Date(imageDate);
+      imgDateOnly.setHours(0, 0, 0, 0);
 
-      if (filter.fromDate && filter.toDate) {
+      if (dateFilter.fromDate && dateFilter.toDate) {
         // Both dates provided - range filter
-        const from = new Date(filter.fromDate);
-        const to = new Date(filter.toDate);
+        const from = new Date(dateFilter.fromDate);
+        const to = new Date(dateFilter.toDate);
         from.setHours(0, 0, 0, 0);
         to.setHours(23, 59, 59, 999); // End of day
-        return imageDate >= from && imageDate <= to;
-      } else if (filter.fromDate) {
+        
+        return imgDateOnly >= from && imgDateOnly <= to;
+      } else if (dateFilter.fromDate) {
         // Only from date - show images from this date onwards
-        const from = new Date(filter.fromDate);
+        const from = new Date(dateFilter.fromDate);
         from.setHours(0, 0, 0, 0);
-        return imageDate >= from;
-      } else if (filter.toDate) {
+        return imgDateOnly >= from;
+      } else if (dateFilter.toDate) {
         // Only to date - show images up to this date
-        const to = new Date(filter.toDate);
+        const to = new Date(dateFilter.toDate);
         to.setHours(23, 59, 59, 999);
-        return imageDate <= to;
+        return imgDateOnly <= to;
       }
 
       return true; // No filter, show all
     });
 
+    console.log('Date filter applied:', {
+      filter: dateFilter,
+      totalImages: allImages.length,
+      filteredCount: filtered.length
+    });
     setImages(filtered);
   }, [dateFilter, allImages]);
 
@@ -172,38 +193,46 @@ const ImageList = ({ currentPath, onSelectImage, dateFilter }) => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {/* Toggle Button */}
-      <button
-        className={`toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 border-b border-gray-300 cursor-pointer flex items-center justify-between transition-colors ${isExpanded ? 'active' : ''}`}
-        onClick={toggleExpand}
-        aria-expanded={isExpanded}
-        aria-controls="panel-content"
-        style={{
-          fontSize: '14px',
-          fontWeight: 'medium'
-        }}
-      >
-        <span className="text-sm font-medium">Image Gallery</span>
-        <span 
-          style={{ 
-            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.3s ease',
-            display: 'inline-block',
-            fontSize: '12px'
-          }}
+    <div className="w-full h-full flex flex-col bg-white relative">
+      {/* Toggle Button - Always Visible on Top Layer */}
+      <div className="w-full bg-gray-100 border-b-2 border-gray-300 shadow-sm relative z-50 flex-shrink-0">
+        <button
+          onClick={toggleExpand}
+          className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-200 active:bg-gray-300 transition-colors cursor-pointer relative z-50"
+          aria-expanded={isExpanded}
+          aria-controls="panel-content"
+          type="button"
+          style={{ zIndex: 1000 }}
         >
-          ▼
-        </span>
-      </button>
+          <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Image Gallery {images.length > 0 && `(${images.length})`}
+          </span>
+          <span 
+            className="text-gray-700 text-xl font-bold transition-transform duration-300 select-none"
+            style={{ 
+              transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              display: 'inline-block',
+              lineHeight: '1',
+              userSelect: 'none'
+            }}
+          >
+            ▲
+          </span>
+        </button>
+      </div>
 
       {/* Collapsible Content */}
       <div 
         id="panel-content"
-        className={`panel-content flex-1 overflow-hidden transition-all duration-300 ease-out ${isExpanded ? 'expanded' : ''}`}
+        className={`flex-1 overflow-hidden transition-all duration-300 ease-out ${isExpanded ? '' : 'hidden'}`}
         style={{
-          maxHeight: isExpanded ? '100%' : '0',
-          overflow: isExpanded ? 'auto' : 'hidden'
+          display: isExpanded ? 'flex' : 'none',
+          flexDirection: 'column',
+          position: 'relative',
+          zIndex: 1
         }}
       >
         <div className="h-full">
