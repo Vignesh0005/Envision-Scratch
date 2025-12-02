@@ -44,22 +44,75 @@ from camera_config import add_dll_paths, check_camera_sdk_availability, initiali
 
 app = Flask(__name__)
 # Configure CORS to allow requests from the React app
+# Allow all origins for development, or specify exact origins
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:5173", "http://localhost:3000", "app://*"],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
+        "origins": [
+            "http://localhost:3000",
+            "http://localhost:5173", 
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173",
+            "app://*"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
         "supports_credentials": True,
         "expose_headers": ["Content-Type", "Authorization"],
         "max_age": 3600
     }
-})
+}, supports_credentials=True)
 
 # Register image processing blueprint
 app.register_blueprint(image_processing_bp)
 
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint - provides API information"""
+    return jsonify({
+        'status': 'success',
+        'message': 'ENVISION Camera Server API',
+        'version': '1.0.0',
+        'endpoints': {
+            'health': '/api/health',
+            'camera': '/api/start-camera, /api/stop-camera, /api/snapshot',
+            'images': '/api/list-images, /api/get-image, /api/thumbnail',
+            'processing': '/api/rotate-image, /api/flip-image, /api/grayscale, etc.',
+            'analysis': '/api/porosity, /api/phase, /api/nodularity, /api/inclusion'
+        },
+        'documentation': 'See /api/health for server status and available camera SDKs'
+    })
+
 # Global observer for file system events
 observer = None
+watched_folders = {}  # Track watched folders: {path: observer_instance}
+
+class ImageFolderHandler(FileSystemEventHandler):
+    """Handler for file system events in image folders"""
+    
+    def __init__(self, folder_path):
+        self.folder_path = folder_path
+        self.allowed_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']
+        
+    def on_created(self, event):
+        """Called when a file is created"""
+        if not event.is_directory:
+            file_path = event.src_path
+            if any(file_path.lower().endswith(ext) for ext in self.allowed_extensions):
+                print(f"New image detected: {file_path}")
+                
+    def on_modified(self, event):
+        """Called when a file is modified"""
+        if not event.is_directory:
+            file_path = event.src_path
+            if any(file_path.lower().endswith(ext) for ext in self.allowed_extensions):
+                print(f"Image modified: {file_path}")
+                
+    def on_deleted(self, event):
+        """Called when a file is deleted"""
+        if not event.is_directory:
+            file_path = event.src_path
+            if any(file_path.lower().endswith(ext) for ext in self.allowed_extensions):
+                print(f"Image deleted: {file_path}")
 
 # Phase analysis configurations
 phase_configurations = {}
@@ -1985,6 +2038,98 @@ def list_images():
             'message': str(e)
         }), 500
 
+class ImageFolderHandler(FileSystemEventHandler):
+    """Handler for file system events in image folders"""
+    
+    def __init__(self, folder_path):
+        self.folder_path = folder_path
+        self.allowed_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']
+        
+    def on_created(self, event):
+        """Called when a file is created"""
+        if not event.is_directory:
+            file_path = event.src_path
+            if any(file_path.lower().endswith(ext) for ext in self.allowed_extensions):
+                print(f"New image detected: {file_path}")
+                
+    def on_modified(self, event):
+        """Called when a file is modified"""
+        if not event.is_directory:
+            file_path = event.src_path
+            if any(file_path.lower().endswith(ext) for ext in self.allowed_extensions):
+                print(f"Image modified: {file_path}")
+                
+    def on_deleted(self, event):
+        """Called when a file is deleted"""
+        if not event.is_directory:
+            file_path = event.src_path
+            if any(file_path.lower().endswith(ext) for ext in self.allowed_extensions):
+                print(f"Image deleted: {file_path}")
+
+@app.route('/api/watch-folder', methods=['POST', 'OPTIONS'])
+def watch_folder():
+    """Set up folder watching for automatic image updates"""
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Max-Age', '3600')
+        return response
+    
+    try:
+        data = request.get_json()
+        folder_path = data.get('path') if data else None
+        
+        if not folder_path:
+            return jsonify({
+                'status': 'error',
+                'message': 'Folder path is required'
+            }), 400
+        
+        # Validate folder exists
+        if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
+            return jsonify({
+                'status': 'error',
+                'message': 'Folder does not exist or is not a directory'
+            }), 404
+        
+        # Normalize path
+        folder_path = os.path.normpath(folder_path)
+        
+        # Stop existing watcher for this folder if any
+        if folder_path in watched_folders:
+            try:
+                watched_folders[folder_path].stop()
+                watched_folders[folder_path].join()
+            except Exception as e:
+                print(f"Error stopping existing watcher: {e}")
+            del watched_folders[folder_path]
+        
+        # Create new observer and handler
+        event_handler = ImageFolderHandler(folder_path)
+        new_observer = Observer()
+        new_observer.schedule(event_handler, folder_path, recursive=False)
+        new_observer.start()
+        
+        watched_folders[folder_path] = new_observer
+        
+        print(f"Started watching folder: {folder_path}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Started watching folder: {folder_path}',
+            'path': folder_path
+        })
+        
+    except Exception as e:
+        print(f"Error setting up folder watch: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
 @app.route('/api/delete-image', methods=['POST'])
 def delete_image():
     try:
@@ -2321,6 +2466,52 @@ def get_porosity_histogram():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    try:
+        from camera_config import check_camera_sdk_availability
+        availability = check_camera_sdk_availability()
+        return jsonify({
+            'status': 'healthy',
+            'server': 'ENVISION Camera Server',
+            'camera_sdks': availability,
+            'endpoints_available': True
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'healthy',
+            'server': 'ENVISION Camera Server',
+            'error': str(e)
+        })
+
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 errors"""
+    return jsonify({
+        'status': 'error',
+        'message': 'Endpoint not found',
+        'error': str(error)
+    }), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors"""
+    return jsonify({
+        'status': 'error',
+        'message': 'Internal server error',
+        'error': str(error)
+    }), 500
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Handle all exceptions"""
+    return jsonify({
+        'status': 'error',
+        'message': str(e),
+        'type': type(e).__name__
+    }), 500
+
 @app.route('/api/porosity/apply-intensity-threshold', methods=['POST'])
 def apply_porosity_intensity_threshold():
     try:
@@ -2337,6 +2528,19 @@ def apply_porosity_intensity_threshold():
         return jsonify(result)
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# Cleanup function for folder watchers
+def cleanup_watchers():
+    """Stop all folder watchers on exit"""
+    for folder_path, obs in watched_folders.items():
+        try:
+            obs.stop()
+            obs.join(timeout=2)
+        except Exception as e:
+            print(f"Error stopping watcher for {folder_path}: {e}")
+
+# Register cleanup on exit
+atexit.register(cleanup_watchers)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, threaded=True) 

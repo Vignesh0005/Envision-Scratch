@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaVideo, FaVideoSlash } from 'react-icons/fa';
 
-const ControlBox = ({ isRecording, setIsRecording, setImagePath, onFolderChange }) => {
+const ControlBox = ({ isRecording, setIsRecording, setImagePath, onFolderChange, onDateFilterChange }) => {
   const [magnification, setMagnification] = useState('100x');
   const [location, setLocation] = useState('C:\\Users\\Public\\MicroScope_Images');
   const [fromDate, setFromDate] = useState('');
@@ -299,7 +299,12 @@ const ControlBox = ({ isRecording, setIsRecording, setImagePath, onFolderChange 
           <input
             type="date"
             value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
+            onChange={(e) => {
+              setFromDate(e.target.value);
+              if (onDateFilterChange) {
+                onDateFilterChange({ fromDate: e.target.value, toDate });
+              }
+            }}
             className="flex-1 p-1 border rounded text-sm"
           />
         </div>
@@ -308,7 +313,12 @@ const ControlBox = ({ isRecording, setIsRecording, setImagePath, onFolderChange 
           <input
             type="date"
             value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
+            onChange={(e) => {
+              setToDate(e.target.value);
+              if (onDateFilterChange) {
+                onDateFilterChange({ fromDate, toDate: e.target.value });
+              }
+            }}
             className="flex-1 p-1 border rounded text-sm"
           />
         </div>

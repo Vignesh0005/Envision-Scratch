@@ -37,21 +37,59 @@ from camera_config import (
 )
 
 # Camera SDK imports
+# Try to add IDS DLL paths before importing
+try:
+    add_dll_paths('ids')
+except Exception as e:
+    logger.debug(f"Could not add IDS DLL paths: {e}")
+
 try:
     # IDS Camera SDK (uEye SDK)
     import pyueye
-    IDS_AVAILABLE = True
+    # Test if pyueye can actually access the DLL
+    try:
+        # Try to access a basic function to verify DLL is available
+        _ = pyueye.is_GetNumberOfCameras
+        IDS_AVAILABLE = True
+        logger.info("IDS uEye SDK is available and ready")
+    except (AttributeError, RuntimeError, OSError) as e:
+        IDS_AVAILABLE = False
+        logger.warning(f"pyueye package is installed but IDS SDK DLL not found: {e}")
+        logger.warning("Please install IDS uEye SDK from: https://en.ids-imaging.com/downloads.html")
 except ImportError:
     IDS_AVAILABLE = False
-    logger.warning("IDS uEye SDK not available. Install pyueye or uEye SDK.")
+    logger.warning("IDS uEye SDK not available. Install pyueye package: pip install pyueye")
+except Exception as e:
+    IDS_AVAILABLE = False
+    logger.warning(f"IDS uEye SDK not available: {e}")
+    logger.warning("pyueye package may be installed but SDK DLL is missing")
+
+# Try to add Mshot DLL paths before importing
+try:
+    add_dll_paths('mshot')
+except Exception as e:
+    logger.debug(f"Could not add Mshot DLL paths: {e}")
 
 try:
     # Mshot Camera SDK
     import mshot
     MSHOT_AVAILABLE = True
+    logger.info("Mshot SDK is available and ready")
 except ImportError:
     MSHOT_AVAILABLE = False
     logger.warning("Mshot SDK not available. Install mshot SDK.")
+except Exception as e:
+    MSHOT_AVAILABLE = False
+    logger.warning(f"Mshot SDK not available: {e}")
+
+# Try to add Hikrobot DLL paths before importing
+try:
+    add_dll_paths('hikrobot')
+    # Initialize Hikrobot SDK if available
+    if initialize_camera_sdk('hikrobot'):
+        logger.debug("Hikrobot SDK DLL paths configured")
+except Exception as e:
+    logger.debug(f"Could not add Hikrobot DLL paths: {e}")
 
 try:
     # Hikrobot Camera SDK (MVS SDK) - Use existing implementation
@@ -60,9 +98,13 @@ try:
     from CameraParams_header import *
     from MvErrorDefine_const import *
     HIKROBOT_AVAILABLE = True
+    logger.info("Hikrobot MVS SDK is available and ready")
 except ImportError:
     HIKROBOT_AVAILABLE = False
     logger.warning("Hikrobot MVS SDK not available. Install MVS SDK.")
+except Exception as e:
+    HIKROBOT_AVAILABLE = False
+    logger.warning(f"Hikrobot MVS SDK not available: {e}")
 
 # Logging already configured above
 

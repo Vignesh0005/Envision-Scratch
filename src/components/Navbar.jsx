@@ -734,13 +734,19 @@ const Navbar = ({ imagePath, setImagePath, currentImageUrl }) => {
 };
 
   const handleOptionClick = (option) => {
+    // Settings Menu
     if (option === "System Configuration") {
       setShowSystemConfig(true);
     } else if (option === "Calibrate") {
       setShowCalibrate(true);
     } else if (option === "Camera Configuration") {
       setShowCameraConfig(true);
-    } else if (option === "Rotate Clockwise") {
+    } else if (option === "Activate Product") {
+      alert("Activate Product feature coming soon");
+      console.log("Activate Product clicked");
+    }
+    // Image Menu
+    else if (option === "Rotate Clockwise") {
       handleRotate('clockwise');
     } else if (option === "Rotate Anti-Clockwise") {
       handleRotate('anticlockwise');
@@ -748,7 +754,17 @@ const Navbar = ({ imagePath, setImagePath, currentImageUrl }) => {
       handleFlip('horizontal');
     } else if (option === "Flip Vertical") {
       handleFlip('vertical');
-    } else if (option === "LowPass Filter") {
+    } else if (option === "Zoom In") {
+      // TODO: Implement zoom in functionality
+      alert("Zoom In feature - Use mouse wheel or pinch gesture");
+      console.log("Zoom In clicked");
+    } else if (option === "Zoom Out") {
+      // TODO: Implement zoom out functionality
+      alert("Zoom Out feature - Use mouse wheel or pinch gesture");
+      console.log("Zoom Out clicked");
+    }
+    // Image Process Menu
+    else if (option === "LowPass Filter") {
       handleLowPassFilter();
     } else if (option === "Median Filter") {
       handleMedianFilter();
@@ -770,14 +786,14 @@ const Navbar = ({ imagePath, setImagePath, currentImageUrl }) => {
       handleImageSharpen();
     } else if (option === "Image Stitch") {
       handleImageStitch();
-    } else if (option === "Porosity") {
+    }
+    // Measurement Menu
+    else if (option === "Porosity") {
       setShowPorosity(true);
     } else if (option === "Phases") {
       setShowPhaseSegment(true);
     } else if (option === "Nodularity") {
       setShowNodularity(true);
-    } else if (option === "Save Image") {
-      handleSaveImage();
     } else if (option === "Flake Analysis") {
       setShowFlakeAnalysis(true);
     } else if (option === "Dentric Arm Spacing") {
@@ -786,7 +802,58 @@ const Navbar = ({ imagePath, setImagePath, currentImageUrl }) => {
       setShowDeCarburization(true);
     } else if (option === "Inclusion") {
       setShowInclusionAnalysis(true);
+    } else if (option === "Grain Size") {
+      alert("Grain Size analysis feature coming soon");
+      console.log("Grain Size clicked");
+    } else if (option === "Particle Analysis") {
+      alert("Particle Analysis feature coming soon");
+      console.log("Particle Analysis clicked");
+    } else if (option === "Graphite Classification") {
+      alert("Graphite Classification feature coming soon");
+      console.log("Graphite Classification clicked");
+    } else if (option === "Coating Thickness") {
+      alert("Coating Thickness analysis feature coming soon");
+      console.log("Coating Thickness clicked");
     }
+    // File Menu
+    else if (option === "Save Image") {
+      handleSaveImage();
+    } else if (option === "Clear") {
+      if (window.confirm("Clear all measurements and current image?")) {
+        setImagePath(null);
+        // Trigger clear in parent component if available
+        if (window.clearAllMeasurements) {
+          window.clearAllMeasurements();
+        }
+        console.log("Clear clicked");
+      }
+    } else if (option === "Exit") {
+      if (window.confirm("Are you sure you want to exit?")) {
+        // In Electron, close window; in browser, show message
+        if (window.electronAPI) {
+          window.electronAPI.closeWindow();
+        } else {
+          alert("Please close the browser tab to exit");
+        }
+      }
+    } else if (option === "Logout") {
+      alert("Logout feature coming soon");
+      console.log("Logout clicked");
+    }
+    // Help Menu
+    else if (option === "About") {
+      alert("ENVISION - Microscopy Image Analysis Platform\nVersion 1.0.0\n\nAdvanced image analysis for metallurgical applications");
+      console.log("About clicked");
+    } else if (option === "Help") {
+      alert("Help documentation coming soon\n\nFor support, check the documentation or contact the development team");
+      console.log("Help clicked");
+    }
+    // Unknown option
+    else {
+      console.warn(`Unhandled dropdown option: ${option}`);
+      alert(`Feature "${option}" is not yet implemented`);
+    }
+    
     setActiveDropdown(null);
   };
 

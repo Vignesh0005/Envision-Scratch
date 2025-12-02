@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
-const ImageList = ({ currentPath, onSelectImage }) => {
+const ImageList = ({ currentPath, onSelectImage, dateFilter }) => {
   const [images, setImages] = useState([]);
+  const [allImages, setAllImages] = useState([]); // Store all images before filtering
   const [loading, setLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(true); // Gallery starts expanded
 
   // Add polling interval state (default 5 seconds)
   const POLL_INTERVAL = 5000;
@@ -28,7 +30,7 @@ const ImageList = ({ currentPath, onSelectImage }) => {
 
       const data = await response.json();
       if (data.status === 'success' && Array.isArray(data.images)) {
-        // Compare with current images to avoid unnecessary updates
+        // Map images with proper date objects
         const newImages = data.images.map(img => ({
           ...img,
           path: img.path,
@@ -38,12 +40,8 @@ const ImageList = ({ currentPath, onSelectImage }) => {
           thumbnail: `http://localhost:5000/api/thumbnail?path=${encodeURIComponent(img.path)}`
         }));
 
-        // Only update if images have changed
-        setImages(prevImages => {
-          const hasChanged = JSON.stringify(prevImages.map(i => i.path)) !== 
-                            JSON.stringify(newImages.map(i => i.path));
-          return hasChanged ? newImages : prevImages;
-        });
+        // Store all images (filtering will be handled by useEffect)
+        setAllImages(newImages);
       }
     } catch (error) {
       console.error('Error loading images:', error);
@@ -130,15 +128,84 @@ const ImageList = ({ currentPath, onSelectImage }) => {
     return filename.replace(/\.[^/.]+$/, '');
   };
 
+  // Apply date filter whenever dateFilter or allImages change
+  useEffect(() => {
+    const filter = dateFilter || { fromDate: '', toDate: '' };
+    
+    if (!filter.fromDate && !filter.toDate) {
+      // No filter applied, show all images
+      setImages(allImages);
+      return;
+    }
+
+    const filtered = allImages.filter(img => {
+      const imageDate = new Date(img.date);
+      imageDate.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+
+      if (filter.fromDate && filter.toDate) {
+        // Both dates provided - range filter
+        const from = new Date(filter.fromDate);
+        const to = new Date(filter.toDate);
+        from.setHours(0, 0, 0, 0);
+        to.setHours(23, 59, 59, 999); // End of day
+        return imageDate >= from && imageDate <= to;
+      } else if (filter.fromDate) {
+        // Only from date - show images from this date onwards
+        const from = new Date(filter.fromDate);
+        from.setHours(0, 0, 0, 0);
+        return imageDate >= from;
+      } else if (filter.toDate) {
+        // Only to date - show images up to this date
+        const to = new Date(filter.toDate);
+        to.setHours(23, 59, 59, 999);
+        return imageDate <= to;
+      }
+
+      return true; // No filter, show all
+    });
+
+    setImages(filtered);
+  }, [dateFilter, allImages]);
+
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Header */}
-      <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
-        <h3 className="text-sm font-medium text-gray-700">Image Gallery</h3>
-      </div>
+      {/* Toggle Button */}
+      <button
+        className={`toggle-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 border-b border-gray-300 cursor-pointer flex items-center justify-between transition-colors ${isExpanded ? 'active' : ''}`}
+        onClick={toggleExpand}
+        aria-expanded={isExpanded}
+        aria-controls="panel-content"
+        style={{
+          fontSize: '14px',
+          fontWeight: 'medium'
+        }}
+      >
+        <span className="text-sm font-medium">Image Gallery</span>
+        <span 
+          style={{ 
+            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.3s ease',
+            display: 'inline-block',
+            fontSize: '12px'
+          }}
+        >
+          ▼
+        </span>
+      </button>
 
-      {/* Image Gallery Content */}
-      <div className="flex-1 overflow-hidden">
+      {/* Collapsible Content */}
+      <div 
+        id="panel-content"
+        className={`panel-content flex-1 overflow-hidden transition-all duration-300 ease-out ${isExpanded ? 'expanded' : ''}`}
+        style={{
+          maxHeight: isExpanded ? '100%' : '0',
+          overflow: isExpanded ? 'auto' : 'hidden'
+        }}
+      >
         <div className="h-full">
           <div className="overflow-x-auto overflow-y-auto h-full">
             <div className="flex gap-4 p-4 min-w-max">

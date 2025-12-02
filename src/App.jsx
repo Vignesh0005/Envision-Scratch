@@ -35,6 +35,7 @@ const App = () => {
   // Add state for resizable image gallery
   const [galleryHeight, setGalleryHeight] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
+  const [dateFilter, setDateFilter] = useState({ fromDate: '', toDate: '' });
 
   useEffect(() => {
     const loadCalibration = () => {
@@ -65,22 +66,6 @@ const App = () => {
   const handleResizeStart = (e) => {
     e.preventDefault();
     setIsResizing(true);
-  };
-  
-  const handleResizeMove = (e) => {
-    if (!isResizing) return;
-    
-    const container = e.currentTarget.parentElement;
-    const rect = container.getBoundingClientRect();
-    const newHeight = rect.bottom - e.clientY;
-    
-    // Constrain height between 150px and 600px
-    const constrainedHeight = Math.max(150, Math.min(600, newHeight));
-    setGalleryHeight(constrainedHeight);
-  };
-  
-  const handleResizeEnd = () => {
-    setIsResizing(false);
   };
   
   // Add global mouse event listeners for resize
@@ -180,6 +165,7 @@ const App = () => {
               setIsRecording={setIsRecording}
               setImagePath={setImagePath}
               onFolderChange={setCurrentFolderPath}
+              onDateFilterChange={setDateFilter}
             />
           </div>
         </div>
@@ -226,7 +212,7 @@ const App = () => {
             
             {/* Resize indicator text */}
             {isResizing && (
-              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium shadow-lg">
+              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium shadow-lg z-20">
                 {galleryHeight}px
               </div>
             )}
@@ -252,6 +238,7 @@ const App = () => {
             <ImageList
               currentPath={currentFolderPath}
               onSelectImage={handleImageSelect}
+              dateFilter={dateFilter}
             />
           </div>
         </div>

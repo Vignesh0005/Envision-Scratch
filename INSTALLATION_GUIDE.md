@@ -111,8 +111,17 @@ HIKROBOT     : ✓ Available
 
 1. **Download uEye SDK**
    - Visit: [IDS Imaging uEye SDK](https://en.ids-imaging.com/downloads.html)
-   - Download uEye SDK for your platform
+   - **What to select on the website:**
+     - **Product Family**: `uEye` or `All`
+     - **Model**: `All Models` or your specific camera model
+     - **Interface**: 
+       - `USB 3.0` for USB cameras (most common)
+       - `GigE` or `Ethernet` for network cameras
+       - `USB 2.0 / USB 3.0` if you have both types
+     - **OS**: `Windows 10/11 64-bit`
+     - **SDK**: `uEye SDK` (latest version)
    - Register/login may be required
+   - See `IDS_SDK_DOWNLOAD_GUIDE.md` for detailed selection guide
 
 2. **Install SDK**
    - Run the installer
@@ -120,15 +129,19 @@ HIKROBOT     : ✓ Available
      - Windows: `C:\Program Files\IDS\uEye\Develop\Bin64`
      - Linux: `/usr/lib` or `/usr/local/lib`
 
-3. **Install Python Package** (if available)
+3. **Install Python Package**
    ```bash
    pip install pyueye
    ```
-   Note: `pyueye` may not be available via pip. You may need to:
-   - Use the SDK's Python bindings directly
-   - Or install from source if available
+   Note: `pyueye` is the Python wrapper. You still need the SDK DLL files.
 
-4. **Configure DLL Paths**
+4. **Verify Installation**
+   ```bash
+   cd backend
+   python check_ids_sdk.py
+   ```
+
+5. **Configure DLL Paths**
    - DLL paths are automatically configured in `camera_config.py`
    - Or manually add to `backend/libs/ids/`
 

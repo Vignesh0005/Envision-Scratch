@@ -229,7 +229,7 @@ def check_camera_sdk_availability() -> dict:
     
     # Check Hikrobot
     try:
-        from MvCameraControl_class import *
+        import MvCameraControl_class
         availability['hikrobot'] = True
         logger.info("Hikrobot MVS SDK is available")
     except ImportError:
