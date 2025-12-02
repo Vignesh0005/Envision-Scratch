@@ -50,16 +50,20 @@
 
 ## Installation
 
+### Quick Start
+
+For detailed installation instructions, see [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)
+
 ### Prerequisites
 - **Node.js 18+** and **npm 9+**
 - **Python 3.8+** and **pip**
-- **PostgreSQL 12+**
+- **PostgreSQL 12+** (optional, for production)
 - **Git**
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-username/envision-microscopy.git
-cd envision-microscopy
+git clone https://github.com/Vignesh0005/Envision-Scratch.git
+cd Envision-Scratch
 ```
 
 ### 2. Install Frontend Dependencies
@@ -73,7 +77,28 @@ cd backend
 pip install -r requirements.txt
 ```
 
-### 4. Database Setup
+### 4. Install Camera SDKs (Required for Camera Features)
+
+#### Hikrobot MVS SDK (Recommended - Already Integrated)
+- Download from [Hikrobot MVS SDK](https://www.hikrobotics.com/en/machinevision/service/download)
+- Install SDK to default location
+- ENVISION automatically detects and uses the SDK
+
+#### IDS uEye SDK (Optional)
+- Download from [IDS Imaging](https://en.ids-imaging.com/downloads.html)
+- Install SDK and Python bindings
+
+#### Mshot SDK (Optional)
+- Contact vendor for SDK
+- Install according to vendor instructions
+
+**Verify SDK Installation:**
+```bash
+cd backend
+python check_camera_sdks.py
+```
+
+### 5. Database Setup (Optional)
 ```bash
 # Create PostgreSQL database
 createdb envision_microscopy
@@ -83,7 +108,7 @@ export DATABASE_URL="postgresql://username:password@localhost/envision_microscop
 export FLASK_ENV=development
 ```
 
-### 5. Initialize Database
+### 6. Initialize Database (Optional)
 ```bash
 cd backend
 python -c "from modules.database import DatabaseManager; db = DatabaseManager(); db.init_database()"
@@ -126,7 +151,7 @@ npm run dist
 ## Project Structure
 
 ```
-envision-microscopy/
+Envision-Scratch/
 ├── public/                 # Static assets and Electron files
 │   ├── electron.js        # Main Electron process
 │   ├── preload.js         # Secure IPC communication

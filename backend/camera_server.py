@@ -36,6 +36,9 @@ from phase_analysis import analyze_phase
 from fpdf import FPDF
 from werkzeug.utils import secure_filename
 from nodularity_analysis import nodularity_analyzer
+from image_processing_utils import ImageProcessing
+from api_image_processing import image_processing_bp
+from camera_config import add_dll_paths, check_camera_sdk_availability, initialize_camera_sdk
 
 
 
@@ -51,6 +54,9 @@ CORS(app, resources={
         "max_age": 3600
     }
 })
+
+# Register image processing blueprint
+app.register_blueprint(image_processing_bp)
 
 # Global observer for file system events
 observer = None
@@ -220,6 +226,9 @@ class WebcamManager:
             print(f"Starting camera with type: {camera_type}")
 
             if camera_type == "HIKERBOT":
+                # Ensure DLL paths are set for Hikrobot
+                add_dll_paths('hikrobot')
+                
                 # Initialize HIKROBOT camera
                 self.hikrobot_camera = MvCamera()
                 
@@ -710,6 +719,7 @@ def rotate_image():
         data = request.get_json()
         image_path = data.get('imagePath')
         direction = data.get('direction', 'clockwise')
+        angle = data.get('angle')  # Optional: arbitrary angle in degrees
         
         if not image_path or not os.path.exists(image_path):
             return jsonify({
@@ -724,10 +734,11 @@ def rotate_image():
                 'message': 'Failed to read image'
             }), 500
 
-        if direction == 'clockwise':
-            rotated_img = np.rot90(img, k=-1)
+        # Use enhanced rotation if angle is provided, otherwise use 90-degree rotation
+        if angle is not None:
+            rotated_img = ImageProcessing.rotate_image(img, float(angle))
         else:
-            rotated_img = np.rot90(img, k=1)
+            rotated_img = ImageProcessing.rotate_image_90(img, direction)
 
         # Save to temp directory
         temp_path = webcam.get_temp_path(image_path, 'rotated')
@@ -771,11 +782,13 @@ def flip_image():
                 'message': 'Failed to read image'
             }), 500
 
-        # Flip the image based on direction
+        # Flip the image based on direction using enhanced utilities
         if direction == 'horizontal':
-            flipped_img = cv2.flip(img, 1)  # 1 for horizontal flip
-        else:
-            flipped_img = cv2.flip(img, 0)  # 0 for vertical flip
+            flipped_img = ImageProcessing.flip_horizontal(img)
+        elif direction == 'vertical':
+            flipped_img = ImageProcessing.flip_vertical(img)
+        else:  # both
+            flipped_img = ImageProcessing.flip_both(img)
 
         # Save with new filename
         directory = os.path.dirname(image_path)
@@ -1095,11 +1108,8 @@ def apply_grayscale():
                 'message': 'Failed to read image'
             }), 500
 
-        # Convert to grayscale
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-        # Convert back to BGR for saving
-        gray_bgr = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+        # Convert to grayscale using enhanced utilities
+        gray_bgr = ImageProcessing.to_grayscale(img)
 
         # Save with new filename
         directory = os.path.dirname(image_path)

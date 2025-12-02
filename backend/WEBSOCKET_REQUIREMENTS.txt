@@ -1,0 +1,27 @@
+# WebSocket Camera Service - Additional Requirements
+# These are optional dependencies for specific camera types
+# Install only if you need support for that camera type
+
+# Core WebSocket dependency (required)
+websockets>=11.0
+
+# OpenCV and image processing (required)
+opencv-python>=4.8.0
+numpy>=1.24.0
+Pillow>=10.0.0
+
+# IDS uEye SDK - requires separate installation
+# Install uEye SDK from IDS Imaging, then:
+# pip install pyueye
+# pyueye>=1.0.0  # Uncomment if available
+
+# Mshot SDK - requires separate installation
+# Install Mshot SDK from manufacturer, then:
+# pip install mshot
+# mshot>=1.0.0  # Uncomment if available
+
+# Hikrobot MVS SDK - requires separate installation
+# MvCameraControl_class  # Uncomment if available
+# Note: Hikrobot SDK is already integrated via MvCameraControl_class.py
+# Ensure MvCameraControl.dll is in PATH or same directory
+

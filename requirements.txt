@@ -1,7 +1,7 @@
 Flask>=3.0.0
 Flask-CORS>=4.0.0
 opencv-python>=4.8.0
-numpy>=1.26.0
+numpy>=1.24.0
 scipy>=1.11.0
 Pillow>=10.0.0
 scikit-image>=0.21.0
@@ -18,3 +18,17 @@ alembic>=1.12.0
 pytest>=7.4.0
 black>=23.9.0
 flake8>=6.1.0
+
+# WebSocket Camera Service Dependencies
+websockets>=11.0
+
+# Camera SDK Dependencies (Optional - require separate installation)
+# IDS uEye SDK - requires separate installation
+# pyueye>=1.0.0  # Uncomment if available
+
+# Mshot SDK - requires separate installation
+# mshot>=1.0.0  # Uncomment if available
+
+# Hikrobot MVS SDK - requires separate installation
+# MvCameraControl_class  # Uncomment if available
+# Note: Hikrobot SDK is already integrated via MvCameraControl_class.py
